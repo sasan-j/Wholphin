@@ -72,7 +72,9 @@ configure<ApplicationExtension> {
     compileSdk = libs.versions.compileSdk.getInt()
 
     defaultConfig {
-        applicationId = "com.github.damontecres.wholphin"
+        // Fork-specific id so release APKs can install alongside upstream Wholphin
+        // (Play Store / GitHub) without signature conflicts.
+        applicationId = "com.github.sasanj.wholphin"
         minSdk = libs.versions.minSdk.getInt()
         targetSdk = libs.versions.targetSdk.getInt()
         versionCode = gitTags.trim().lines().size
@@ -98,6 +100,18 @@ configure<ApplicationExtension> {
                 enableV4Signing = true
             }
         }
+        // Local / cloud agent builds: sign release with the Android debug keystore so the
+        // APK is installable without CI signing secrets.
+        create("localDebug") {
+            storeFile = file("${System.getProperty("user.home")}/.android/debug.keystore")
+            storePassword = "android"
+            keyAlias = "androiddebugkey"
+            keyPassword = "android"
+            enableV1Signing = true
+            enableV2Signing = true
+            enableV3Signing = true
+            enableV4Signing = true
+        }
     }
 
     buildTypes {
@@ -113,13 +127,18 @@ configure<ApplicationExtension> {
                 signingConfig = signingConfigs.getByName("ci")
             } else {
                 val localPropertiesFile = project.rootProject.file("local.properties")
+                var resolvedFromLocalProps = false
                 if (localPropertiesFile.exists()) {
                     val properties = Properties()
                     properties.load(localPropertiesFile.inputStream())
                     val signingConfigName = properties["release.signing.config"]?.toString()
                     if (signingConfigName != null) {
                         signingConfig = signingConfigs.getByName(signingConfigName)
+                        resolvedFromLocalProps = true
                     }
+                }
+                if (!resolvedFromLocalProps) {
+                    signingConfig = signingConfigs.getByName("localDebug")
                 }
             }
         }
