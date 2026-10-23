@@ -15,6 +15,8 @@ import com.github.damontecres.wholphin.ui.preferences.PreferenceGroup
 import com.github.damontecres.wholphin.ui.preferences.PreferenceScreenOption
 import com.github.damontecres.wholphin.ui.preferences.PreferenceValidation
 import com.github.damontecres.wholphin.util.DebugLogTree
+import com.github.damontecres.wholphin.util.playback.PlayerBufferConfig
+import com.github.damontecres.wholphin.util.profile.effectiveAudioPassthrough
 import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.minutes
@@ -402,19 +404,115 @@ sealed interface AppPreference<Pref, T> {
                 valueToIndex = { it.ordinal },
             )
 
-        val Ac3Supported =
+        val AudioPassthroughSettings =
+            AppDestinationPreference<AppPreferences>(
+                title = R.string.audio_passthrough,
+                destination = Destination.Settings(PreferenceScreenOption.AUDIO_PASSTHROUGH),
+                summary = R.string.audio_passthrough_summary,
+            )
+
+        val PassthroughAc3 =
             AppSwitchPreference<AppPreferences>(
-                title = R.string.ac3_supported,
+                title = R.string.audio_passthrough_ac3,
                 defaultValue = true,
-                getter = { it.playbackPreferences.overrides.ac3Supported },
+                getter = { it.playbackPreferences.overrides.effectiveAudioPassthrough().ac3 },
                 setter = { prefs, value ->
-                    if (!value) prefs.updateExperimentalPreferences { preferAc3Surround = false }
-                    prefs.updatePlaybackOverrides {
-                        ac3Supported = value
+                    var updated = prefs
+                    if (!value) {
+                        updated = updated.updateExperimentalPreferences { preferAc3Surround = false }
                     }
+                    updated
+                        .updatePlaybackAudioPassthrough { ac3 = value }
+                        .updatePlaybackOverrides {
+                            // Keep deprecated flag in sync for older readers / migrations
+                            ac3Supported = value
+                        }
                 },
                 summaryOn = R.string.enabled,
                 summaryOff = R.string.disabled,
+            )
+
+        val PassthroughEac3 =
+            AppSwitchPreference<AppPreferences>(
+                title = R.string.audio_passthrough_eac3,
+                defaultValue = false,
+                getter = { it.playbackPreferences.overrides.effectiveAudioPassthrough().eac3 },
+                setter = { prefs, value ->
+                    prefs.updatePlaybackAudioPassthrough { eac3 = value }
+                },
+                summaryOn = R.string.audio_passthrough_eac3_summary,
+                summaryOff = R.string.audio_passthrough_eac3_summary,
+            )
+
+        val PassthroughDts =
+            AppSwitchPreference<AppPreferences>(
+                title = R.string.audio_passthrough_dts,
+                defaultValue = true,
+                getter = { it.playbackPreferences.overrides.effectiveAudioPassthrough().dts },
+                setter = { prefs, value ->
+                    prefs.updatePlaybackAudioPassthrough { dts = value }
+                },
+                summaryOn = R.string.enabled,
+                summaryOff = R.string.disabled,
+            )
+
+        val PassthroughDtsHd =
+            AppSwitchPreference<AppPreferences>(
+                title = R.string.audio_passthrough_dts_hd,
+                defaultValue = false,
+                getter = { it.playbackPreferences.overrides.effectiveAudioPassthrough().dtsHd },
+                setter = { prefs, value ->
+                    prefs.updatePlaybackAudioPassthrough { dtsHd = value }
+                },
+                summaryOn = R.string.audio_passthrough_dts_hd_summary,
+                summaryOff = R.string.audio_passthrough_dts_hd_summary,
+            )
+
+        val PassthroughTrueHd =
+            AppSwitchPreference<AppPreferences>(
+                title = R.string.audio_passthrough_truehd,
+                defaultValue = false,
+                getter = { it.playbackPreferences.overrides.effectiveAudioPassthrough().truehd },
+                setter = { prefs, value ->
+                    prefs.updatePlaybackAudioPassthrough { truehd = value }
+                },
+                summaryOn = R.string.audio_passthrough_requires_earc,
+                summaryOff = R.string.audio_passthrough_requires_earc,
+            )
+
+        val PassthroughMlp =
+            AppSwitchPreference<AppPreferences>(
+                title = R.string.audio_passthrough_mlp,
+                defaultValue = false,
+                getter = { it.playbackPreferences.overrides.effectiveAudioPassthrough().mlp },
+                setter = { prefs, value ->
+                    prefs.updatePlaybackAudioPassthrough { mlp = value }
+                },
+                summaryOn = R.string.audio_passthrough_requires_earc,
+                summaryOff = R.string.audio_passthrough_requires_earc,
+            )
+
+        val PlayerBufferSizePref =
+            AppSliderPreference<AppPreferences>(
+                title = R.string.player_buffer_size,
+                defaultValue = PlayerBufferConfig.DEFAULT_TARGET_MIB.toLong(),
+                min = PlayerBufferConfig.MIN_MIB.toLong(),
+                max = PlayerBufferConfig.MAX_MIB.toLong(),
+                interval = PlayerBufferConfig.SLIDER_STEP_MIB,
+                getter = { it.playbackPreferences.playerBufferTargetMib.toLong() },
+                setter = { prefs, value ->
+                    prefs.updatePlaybackPreferences {
+                        playerBufferTargetMib = value.toInt()
+                    }
+                },
+                summarizer = { value ->
+                    when (val mib = value?.toInt()) {
+                        null -> null
+                        PlayerBufferConfig.AUTO_MIB -> "Auto (ExoPlayer default)"
+                        else -> "$mib MiB"
+                    }
+                },
+                summary = R.string.player_buffer_size_summary,
             )
 
         val DownMixStereo =
@@ -1240,11 +1338,21 @@ private val ExoPlayerSettings =
     listOf(
         AppPreference.FfmpegPreference,
         AppPreference.DownMixStereo,
-        AppPreference.Ac3Supported,
+        AppPreference.AudioPassthroughSettings,
         AppPreference.AssSubtitleMode,
         AppPreference.DirectPlayPgs,
         AppPreference.DecodeAv1,
         AppPreference.HdrFormatSettings,
+    )
+
+private val AudioPassthroughSettings =
+    listOf(
+        AppPreference.PassthroughAc3,
+        AppPreference.PassthroughEac3,
+        AppPreference.PassthroughDts,
+        AppPreference.PassthroughDtsHd,
+        AppPreference.PassthroughTrueHd,
+        AppPreference.PassthroughMlp,
     )
 
 private val HdrFormatSettings =
@@ -1269,6 +1377,14 @@ val HdrFormatPreferences =
         PreferenceGroup(
             title = R.string.hdr_formats,
             preferences = HdrFormatSettings,
+        ),
+    )
+
+val AudioPassthroughPreferencesScreen =
+    listOf(
+        PreferenceGroup(
+            title = R.string.audio_passthrough,
+            preferences = AudioPassthroughSettings,
         ),
     )
 
@@ -1334,6 +1450,7 @@ val advancedPreferences =
                         AppPreference.DpadSeekModePref,
                         AppPreference.MaxResolutionPref,
                         AppPreference.MaxBitrate,
+                        AppPreference.PlayerBufferSizePref,
                         AppPreference.RefreshRateSwitching,
                         AppPreference.ResolutionSwitching,
                         AppPreference.PlaybackDebugInfo,

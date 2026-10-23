@@ -35,6 +35,7 @@ import com.github.damontecres.wholphin.services.hilt.AuthOkHttpClient
 import com.github.damontecres.wholphin.util.BitstreamFilteringCodecAdapterFactory
 import com.github.damontecres.wholphin.util.Hdr10PlusMaskingFilter
 import com.github.damontecres.wholphin.util.WholphinDispatchers
+import com.github.damontecres.wholphin.util.playback.PlayerBufferConfig
 import dagger.hilt.android.qualifiers.ApplicationContext
 import io.github.peerless2012.ass.media.AssHandler
 import io.github.peerless2012.ass.media.factory.AssRenderersFactory
@@ -152,7 +153,9 @@ class PlayerFactory
                             .setMediaSourceFactory(mediaSourceFactory)
                             .setRenderersFactory(renderersFactory)
                             .setTrackSelector(trackSelector)
-                            .build()
+                            .setLoadControl(
+                                PlayerBufferConfig.createLoadControl(prefs.playerBufferTargetMib),
+                            ).build()
                             .apply {
                                 assHandler?.init(this)
                                 withContext(WholphinDispatchers.Main) {

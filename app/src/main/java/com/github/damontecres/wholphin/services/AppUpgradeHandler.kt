@@ -40,6 +40,7 @@ import com.github.damontecres.wholphin.ui.preferences.subtitle.SubtitleSettings
 import com.github.damontecres.wholphin.ui.preferences.subtitle.shouldEnableSeparateHdrToggle
 import com.github.damontecres.wholphin.ui.setup.seerr.migrateSeerrUrl
 import com.github.damontecres.wholphin.util.Version
+import com.github.damontecres.wholphin.util.profile.defaultAudioPassthroughPreferences
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.firstOrNull
@@ -163,7 +164,7 @@ class AppUpgradeHandler
             if (previous.isEqualOrBefore(Version.fromString("0.1.0-2-g0"))) {
                 appPreferences.updateData {
                     it.updatePlaybackOverrides {
-                        ac3Supported = AppPreference.Ac3Supported.defaultValue
+                        ac3Supported = AppPreference.PassthroughAc3.defaultValue
                         downmixStereo = AppPreference.DownMixStereo.defaultValue
 //                        directPlayAss = AppPreference.DirectPlayAss.defaultValue
                         directPlayPgs = AppPreference.DirectPlayPgs.defaultValue
@@ -487,6 +488,58 @@ class AppUpgradeHandler
                         }
                     } else {
                         it
+                    }
+                }
+            }
+
+            if (previous.isLessThan(Version.fromString("1.0.11-0-g0"))) {
+                // Introduce ARC audio passthrough defaults (DD + DTS; no DD+) and larger buffer.
+                // Proto3 bool/int defaults are false/0, so existing installs must be migrated.
+                appPreferences.updateData { prefs ->
+                    val ac3WasEnabled = prefs.playbackPreferences.overrides.ac3Supported
+                    val bufferAlreadySet = prefs.playbackPreferences.playerBufferTargetMib != 0
+                    var updated = prefs
+                    if (!bufferAlreadySet) {
+                        updated =
+                            updated.updatePlaybackPreferences {
+                                playerBufferTargetMib =
+                                    AppPreference.PlayerBufferSizePref.defaultValue.toInt()
+                            }
+                    }
+                    updated.updatePlaybackOverrides {
+                        audioPassthrough =
+                            if (ac3WasEnabled) {
+                                defaultAudioPassthroughPreferences()
+                            } else {
+                                defaultAudioPassthroughPreferences()
+                                    .toBuilder()
+                                    .setAc3(false)
+                                    .build()
+                            }
+                    }
+                }
+            }
+
+            if (previous.isLessThan(Version.fromString("1.0.12-0-g0"))) {
+                // Basic ARC defaults: DD + DTS only. Disable E-AC3 (DD+) — many AVRs cannot
+                // carry DD+ over ARC. Preserve other toggles if already configured.
+                appPreferences.updateData { prefs ->
+                    val current = prefs.playbackPreferences.overrides.audioPassthrough
+                    val seeded =
+                        if (current.configured) {
+                            current
+                        } else if (prefs.playbackPreferences.overrides.ac3Supported) {
+                            defaultAudioPassthroughPreferences()
+                        } else {
+                            defaultAudioPassthroughPreferences().toBuilder().setAc3(false).build()
+                        }
+                    prefs.updatePlaybackOverrides {
+                        audioPassthrough =
+                            seeded
+                                .toBuilder()
+                                .setEac3(false)
+                                .setConfigured(true)
+                                .build()
                     }
                 }
             }

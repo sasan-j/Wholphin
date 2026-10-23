@@ -46,6 +46,7 @@ enum class PreferenceScreenOption {
     SKIP_SEGMENTS,
     EXPERIMENTAL,
     HDR_FORMATS,
+    AUDIO_PASSTHROUGH,
     ;
 
     companion object {

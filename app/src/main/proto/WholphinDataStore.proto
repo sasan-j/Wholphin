@@ -48,8 +48,24 @@ enum AssPlaybackMode{
   ASS_TRANSCODE = 2;
 }
 
+/**
+ * Per-codec audio passthrough / direct-play advertising to the Jellyfin server.
+ * Defaults target basic HDMI ARC (AC3 / DTS). Many ARCs do not carry E-AC3 (DD+);
+ * TrueHD / DTS-HD / MLP need eARC.
+ */
+message AudioPassthroughPreferences {
+  bool ac3 = 1;
+  bool eac3 = 2;
+  bool dts = 3;
+  bool dts_hd = 4;
+  bool truehd = 5;
+  bool mlp = 6;
+  // When false, [allowedAudioCodecs] falls back to ARC-friendly defaults (or legacy ac3_supported).
+  bool configured = 7;
+}
+
 message PlaybackOverrides{
-  bool ac3_supported = 1;
+  bool ac3_supported = 1 [deprecated = true];
   bool downmix_stereo = 2;
   bool direct_play_ass = 3 [deprecated = true];
   bool direct_play_pgs = 4;
@@ -63,6 +79,7 @@ message PlaybackOverrides{
   HdrOverrideMode dovi_profile_8_override = 12;
   HdrOverrideMode hdr10_override = 13;
   HdrOverrideMode hdr10_plus_override = 14;
+  AudioPassthroughPreferences audio_passthrough = 15;
 }
 
 message PlaybackPreferences {
@@ -94,6 +111,8 @@ message PlaybackPreferences {
   string external_player = 24;
   bool cinema_mode = 25;
   DpadSeekMode dpad_seek_mode = 26;
+  // ExoPlayer target buffer in MiB. 0 = Media3 defaults. Size is prioritized over time.
+  int32 player_buffer_target_mib = 27;
 }
 
 enum DpadSeekMode {
