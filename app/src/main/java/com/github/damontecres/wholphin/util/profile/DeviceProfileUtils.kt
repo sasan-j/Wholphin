@@ -15,13 +15,6 @@ import org.jellyfin.sdk.model.api.SubtitleDeliveryMethod
 import org.jellyfin.sdk.model.deviceprofile.DeviceProfileBuilder
 import org.jellyfin.sdk.model.deviceprofile.buildDeviceProfile
 
-private val downmixSupportedAudioCodecs =
-    arrayOf(
-        Codec.Audio.AAC,
-        Codec.Audio.MP2,
-        Codec.Audio.MP3,
-    )
-
 val supportedAudioCodecs =
     arrayOf(
         Codec.Audio.AAC,
@@ -45,28 +38,12 @@ val supportedAudioCodecs =
         Codec.Audio.VORBIS,
     )
 
-// fun createDeviceProfile(
-//    context: Context,
-//    userPreferences: UserPreferences,
-//    serverVersion: ServerVersion?,
-// ) = userPreferences.appPreferences.playbackPreferences.let { prefs ->
-//    createDeviceProfile(
-//        mediaTest = MediaCodecCapabilitiesTest(context),
-//        maxBitrate = prefs.maxBitrate.toInt(),
-//        isAC3Enabled = prefs.overrides.ac3Supported,
-//        downMixAudio = prefs.overrides.downmixStereo,
-//        assDirectPlay = prefs.overrides.directPlayAss,
-//        pgsDirectPlay = prefs.overrides.directPlayPgs,
-//        jellyfinTenEleven = serverVersion != null && serverVersion >= ServerVersion(10, 11, 0),
-//    )
-// }
-
 private fun Size.min(min: Int) = if (min > 0 && height > min) Size(width, min) else this
 
 fun createDeviceProfile(
     mediaTest: MediaCodecCapabilitiesTest,
     maxBitrate: Int,
-    isAC3Enabled: Boolean,
+    allowedAudioCodecs: Array<String>,
     downMixAudio: Boolean,
     assDirectPlay: Boolean,
     pgsDirectPlay: Boolean,
@@ -77,22 +54,6 @@ fun createDeviceProfile(
     forceDisabledHdr: Set<String>,
     maxResolution: Int,
 ) = buildDeviceProfile {
-    val allowedAudioCodecs =
-        when {
-            downMixAudio -> {
-                downmixSupportedAudioCodecs
-            }
-
-            !isAC3Enabled -> {
-                supportedAudioCodecs
-                    .filterNot { it == Codec.Audio.EAC3 || it == Codec.Audio.AC3 }
-                    .toTypedArray()
-            }
-
-            else -> {
-                supportedAudioCodecs
-            }
-        }
 
     val supportsHevc = mediaTest.supportsHevc()
     val supportsHevcMain10 = mediaTest.supportsHevcMain10()
@@ -147,10 +108,17 @@ fun createDeviceProfile(
         if (supportsHevc) videoCodec(Codec.Video.HEVC)
         videoCodec(Codec.Video.H264)
 
+        // Prefer AC3 ahead of AAC so AVR/ARC setups bitstream-decode the fallback
+        // instead of forcing PCM when DirectPlay is not viable.
         if (preferAc3ForSurround) {
             audioCodec(Codec.Audio.AC3)
         } else {
-            audioCodec(*allowedAudioCodecs)
+            val tsCodecs = hlsMpegTsAudioCodecs.filterAllowed(allowedAudioCodecs)
+            if (tsCodecs.isNotEmpty()) {
+                audioCodec(*tsCodecs)
+            } else {
+                audioCodec(*allowedAudioCodecs)
+            }
         }
 
         copyTimestamps = false
@@ -171,7 +139,7 @@ fun createDeviceProfile(
         container = Codec.Container.TS
         protocol = MediaStreamProtocol.HLS
 
-        if (preferAc3ForSurround) {
+        if (preferAc3ForSurround && Codec.Audio.AC3 in allowedAudioCodecs) {
             audioCodec(Codec.Audio.AC3)
         } else {
             audioCodec(Codec.Audio.AAC)

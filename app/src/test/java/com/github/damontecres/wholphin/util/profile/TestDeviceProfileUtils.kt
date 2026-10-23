@@ -39,7 +39,7 @@ class TestDeviceProfileUtils {
         createDeviceProfile(
             mediaTest = mediaTest,
             maxBitrate = 100_000_000,
-            isAC3Enabled = true,
+            allowedAudioCodecs = supportedAudioCodecs,
             downMixAudio = false,
             assDirectPlay = true,
             pgsDirectPlay = true,

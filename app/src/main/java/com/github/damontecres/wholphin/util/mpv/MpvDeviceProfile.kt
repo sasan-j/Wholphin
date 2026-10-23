@@ -6,9 +6,12 @@ import com.github.damontecres.wholphin.util.profile.supportedAudioCodecs
 import org.jellyfin.sdk.model.api.DlnaProfileType
 import org.jellyfin.sdk.model.api.EncodingContext
 import org.jellyfin.sdk.model.api.MediaStreamProtocol
+import org.jellyfin.sdk.model.api.DeviceProfile
 import org.jellyfin.sdk.model.deviceprofile.buildDeviceProfile
 
-val mpvDeviceProfile =
+fun createMpvDeviceProfile(
+    allowedAudioCodecs: Array<String> = supportedAudioCodecs,
+): DeviceProfile =
     buildDeviceProfile {
         name = "mpv"
 
@@ -25,7 +28,7 @@ val mpvDeviceProfile =
             videoCodec(Codec.Video.HEVC)
             videoCodec(Codec.Video.H264)
 
-            audioCodec(*supportedAudioCodecs)
+            audioCodec(*allowedAudioCodecs)
 
             copyTimestamps = false
             enableSubtitlesInManifest = true
@@ -63,7 +66,7 @@ val mpvDeviceProfile =
                 Codec.Video.VP9,
             )
 
-            audioCodec(*supportedAudioCodecs, Codec.Audio.WAV, Codec.Audio.OGG)
+            audioCodec(*allowedAudioCodecs, Codec.Audio.WAV, Codec.Audio.OGG)
         }
 
         subtitleProfile(Codec.Subtitle.VTT, embedded = true, hls = true, external = true)
@@ -79,3 +82,6 @@ val mpvDeviceProfile =
         subtitleProfile(Codec.Subtitle.ASS, encode = true, embedded = true, external = true)
         subtitleProfile(Codec.Subtitle.SSA, encode = true, embedded = true, external = true)
     }
+
+@Deprecated("Use createMpvDeviceProfile() so audio passthrough prefs are respected", ReplaceWith("createMpvDeviceProfile()"))
+val mpvDeviceProfile = createMpvDeviceProfile()

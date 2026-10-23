@@ -5,6 +5,7 @@ import com.github.damontecres.wholphin.ui.nav.Destination
 import com.github.damontecres.wholphin.ui.preferences.PreferenceGroup
 import com.github.damontecres.wholphin.ui.preferences.PreferenceScreenOption
 import com.github.damontecres.wholphin.ui.preferences.PreferenceValidation
+import com.github.damontecres.wholphin.util.profile.effectiveAudioPassthrough
 
 object ExperimentalPreference {
     val Enable =
@@ -61,8 +62,9 @@ object ExperimentalPreference {
             summary = R.string.prefer_ac3_for_surround_summary,
             validator = { prefs, value ->
                 prefs.playbackPreferences.overrides.let {
-                    if (value && !it.ac3Supported) {
-                        PreferenceValidation.Invalid("AC3 support is not enabled")
+                    val ac3Enabled = it.effectiveAudioPassthrough().ac3
+                    if (value && !ac3Enabled) {
+                        PreferenceValidation.Invalid("AC3 passthrough is not enabled")
                     } else if (value && it.downmixStereo) {
                         PreferenceValidation.Invalid("Always downmixing to stereo")
                     } else {

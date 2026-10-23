@@ -40,6 +40,7 @@ import com.github.damontecres.wholphin.ui.preferences.subtitle.SubtitleSettings
 import com.github.damontecres.wholphin.ui.preferences.subtitle.shouldEnableSeparateHdrToggle
 import com.github.damontecres.wholphin.ui.setup.seerr.migrateSeerrUrl
 import com.github.damontecres.wholphin.util.Version
+import com.github.damontecres.wholphin.util.profile.defaultAudioPassthroughPreferences
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.firstOrNull
@@ -163,7 +164,7 @@ class AppUpgradeHandler
             if (previous.isEqualOrBefore(Version.fromString("0.1.0-2-g0"))) {
                 appPreferences.updateData {
                     it.updatePlaybackOverrides {
-                        ac3Supported = AppPreference.Ac3Supported.defaultValue
+                        ac3Supported = AppPreference.PassthroughAc3.defaultValue
                         downmixStereo = AppPreference.DownMixStereo.defaultValue
 //                        directPlayAss = AppPreference.DirectPlayAss.defaultValue
                         directPlayPgs = AppPreference.DirectPlayPgs.defaultValue
@@ -488,6 +489,29 @@ class AppUpgradeHandler
                     } else {
                         it
                     }
+                }
+            }
+
+            if (previous.isLessThan(Version.fromString("1.0.11-0-g0"))) {
+                // Introduce per-codec audio passthrough (ARC defaults) and larger player buffer.
+                // Proto3 bool defaults are false, so existing installs must be migrated explicitly.
+                appPreferences.updateData { prefs ->
+                    val ac3WasEnabled = prefs.playbackPreferences.overrides.ac3Supported
+                    prefs
+                        .updatePlaybackPreferences {
+                            playerBufferSize = AppPreference.PlayerBufferSizePref.defaultValue
+                        }.updatePlaybackOverrides {
+                            audioPassthrough =
+                                if (ac3WasEnabled) {
+                                    defaultAudioPassthroughPreferences()
+                                } else {
+                                    defaultAudioPassthroughPreferences()
+                                        .toBuilder()
+                                        .setAc3(false)
+                                        .setEac3(false)
+                                        .build()
+                                }
+                        }
                 }
             }
 

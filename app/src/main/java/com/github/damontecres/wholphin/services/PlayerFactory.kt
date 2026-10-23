@@ -30,11 +30,13 @@ import com.github.damontecres.wholphin.preferences.AppPreferences
 import com.github.damontecres.wholphin.preferences.AssPlaybackMode
 import com.github.damontecres.wholphin.preferences.MediaExtensionStatus
 import com.github.damontecres.wholphin.preferences.PlayerBackend
+import com.github.damontecres.wholphin.preferences.PlayerBufferSize
 import com.github.damontecres.wholphin.preferences.get
 import com.github.damontecres.wholphin.services.hilt.AuthOkHttpClient
 import com.github.damontecres.wholphin.util.BitstreamFilteringCodecAdapterFactory
 import com.github.damontecres.wholphin.util.Hdr10PlusMaskingFilter
 import com.github.damontecres.wholphin.util.WholphinDispatchers
+import com.github.damontecres.wholphin.util.playback.PlayerBufferConfig
 import dagger.hilt.android.qualifiers.ApplicationContext
 import io.github.peerless2012.ass.media.AssHandler
 import io.github.peerless2012.ass.media.factory.AssRenderersFactory
@@ -147,11 +149,15 @@ class PlayerFactory
                                 disableAudioOffload = disableAudioOffload,
                             )
 
+                        val bufferSize =
+                            prefs.playerBufferSize.takeUnless { it == PlayerBufferSize.UNRECOGNIZED }
+                                ?: PlayerBufferSize.BUFFER_LARGE
                         ExoPlayer
                             .Builder(context)
                             .setMediaSourceFactory(mediaSourceFactory)
                             .setRenderersFactory(renderersFactory)
                             .setTrackSelector(trackSelector)
+                            .setLoadControl(PlayerBufferConfig.createLoadControl(bufferSize))
                             .build()
                             .apply {
                                 assHandler?.init(this)

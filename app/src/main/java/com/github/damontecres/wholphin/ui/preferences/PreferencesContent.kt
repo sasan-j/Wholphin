@@ -51,6 +51,7 @@ import com.github.damontecres.wholphin.data.model.SeerrUser
 import com.github.damontecres.wholphin.preferences.AppPreference
 import com.github.damontecres.wholphin.preferences.AppPreferences
 import com.github.damontecres.wholphin.preferences.AppSwitchPreference
+import com.github.damontecres.wholphin.preferences.AudioPassthroughPreferencesScreen
 import com.github.damontecres.wholphin.preferences.ExoPlayerPreferences
 import com.github.damontecres.wholphin.preferences.ExperimentalPreference
 import com.github.damontecres.wholphin.preferences.HdrFormatPreferences
@@ -160,6 +161,7 @@ fun PreferencesContent(
             PreferenceScreenOption.SKIP_SEGMENTS -> SkipSegmentPreferences
             PreferenceScreenOption.EXPERIMENTAL -> experimentalPreferences
             PreferenceScreenOption.HDR_FORMATS -> HdrFormatPreferences
+            PreferenceScreenOption.AUDIO_PASSTHROUGH -> AudioPassthroughPreferencesScreen
         }
     val screenTitle =
         when (preferenceScreenOption) {
@@ -171,6 +173,7 @@ fun PreferencesContent(
             PreferenceScreenOption.SKIP_SEGMENTS -> R.string.skip_behavior
             PreferenceScreenOption.EXPERIMENTAL -> R.string.experimental_settings
             PreferenceScreenOption.HDR_FORMATS -> R.string.hdr_formats
+            PreferenceScreenOption.AUDIO_PASSTHROUGH -> R.string.audio_passthrough
         }
 
     var visible by remember { mutableStateOf(false) }
@@ -838,6 +841,7 @@ fun PreferencesPage(
             PreferenceScreenOption.SKIP_SEGMENTS,
             PreferenceScreenOption.EXPERIMENTAL,
             PreferenceScreenOption.HDR_FORMATS,
+            PreferenceScreenOption.AUDIO_PASSTHROUGH,
             -> {
                 PreferencesContent(
                     initialPreferences,
