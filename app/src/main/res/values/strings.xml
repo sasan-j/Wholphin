@@ -331,17 +331,8 @@
     <string name="audio_passthrough_mlp">MLP</string>
     <string name="audio_passthrough_requires_earc">Requires eARC (not carried over standard HDMI ARC)</string>
     <string name="player_buffer_size">Player buffer size</string>
-    <string name="player_buffer_size_summary">Larger buffers absorb short bitrate spikes. Size caps keep memory safe on ~1 GB TVs.</string>
-    <string-array name="player_buffer_size_options">
-        <item>Auto (ExoPlayer default)</item>
-        <item>Large (recommended)</item>
-        <item>Extra large</item>
-    </string-array>
-    <string-array name="player_buffer_size_summaries">
-        <item>Media3 defaults (~50s time-based; often ~64–70 MB in practice)</item>
-        <item>Up to ~96 MB buffered; better for high-bitrate spikes</item>
-        <item>Up to ~160 MB buffered; use only if Large is not enough</item>
-    </string-array>
+    <string name="player_buffer_size_summary">Target ExoPlayer buffer in MiB (0 = Auto). Size is prioritized over time so high-bitrate spikes do not allocate hundreds of MB on ~1 GB TVs. Default 96 MiB ≈ 5s at 150 Mbps.</string>
+    <string name="audio_passthrough_dts_hd_summary">Requires eARC. Jellyfin usually tags DTS-HD as dts/dca, so this does not change Direct Play by itself — leave TrueHD/MLP off for ARC.</string>
     <string name="advanced_settings">Advanced Settings</string>
     <string name="advanced_ui">Advanced UI</string>
     <string name="app_theme">Application Theme</string>

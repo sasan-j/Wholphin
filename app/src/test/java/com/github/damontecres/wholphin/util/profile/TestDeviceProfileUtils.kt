@@ -4,6 +4,7 @@ import io.mockk.every
 import io.mockk.mockk
 import org.jellyfin.sdk.model.api.CodecType
 import org.jellyfin.sdk.model.api.DeviceProfile
+import org.jellyfin.sdk.model.api.DlnaProfileType
 import org.jellyfin.sdk.model.api.ProfileConditionValue
 import org.junit.Assert
 import org.junit.Test
@@ -137,5 +138,16 @@ class TestDeviceProfileUtils {
                 forceDisabledHdr = setOf(WholphinVideoRangeType.DOVI.serialName),
             )
         Assert.assertTrue(unsupportedRangeTypes(profile, Codec.Video.AV1).contains(WholphinVideoRangeType.DOVI.serialName))
+    }
+
+    @Test
+    fun `Test video transcoding profiles include both MPEG-TS and fMP4 HLS`() {
+        val mediaTest = mockk<MediaCodecCapabilitiesTest>(relaxed = true)
+        every { mediaTest.supportsHevc() } returns true
+
+        val profile = buildProfile(mediaTest, jellyfinTenEleven = true)
+        val videoTranscodes = profile.transcodingProfiles.filter { it.type == DlnaProfileType.VIDEO }
+        Assert.assertTrue(videoTranscodes.any { it.container == Codec.Container.TS })
+        Assert.assertTrue(videoTranscodes.any { it.container == Codec.Container.MP4 })
     }
 }

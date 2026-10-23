@@ -120,7 +120,9 @@ message PlaybackPreferences {
   string external_player = 24;
   bool cinema_mode = 25;
   DpadSeekMode dpad_seek_mode = 26;
-  PlayerBufferSize player_buffer_size = 27;
+  PlayerBufferSize player_buffer_size = 27 [deprecated = true];
+  // ExoPlayer target buffer in MiB. 0 = Media3 defaults. Size is prioritized over time.
+  int32 player_buffer_target_mib = 28;
 }
 
 enum DpadSeekMode {

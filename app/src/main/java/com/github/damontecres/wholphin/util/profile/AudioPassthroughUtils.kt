@@ -7,16 +7,17 @@ import com.github.damontecres.wholphin.preferences.PlaybackOverrides
  * Codecs that have a user-facing passthrough toggle.
  * Codecs not listed here stay advertised whenever audio is not forced to stereo downmix.
  *
- * DTS-HD is mapped to [Codec.Audio.DCA] to match Jellyfin Android TV's device-profile
- * convention (core DTS uses [Codec.Audio.DTS]). TrueHD / MLP / DTS-HD require eARC;
- * ARC defaults enable only AC3, E-AC3 (incl. DD+ Atmos), and core DTS.
+ * Both [Codec.Audio.DTS] and [Codec.Audio.DCA] are core-DTS codec names used by Jellyfin;
+ * they follow the DTS toggle. DTS-HD MA is usually still tagged as dts/dca (profile only),
+ * so it cannot be filtered separately in the DeviceProfile codec list — the DTS-HD setting
+ * is kept for UI/eARC guidance. TrueHD / MLP require eARC.
  */
 val audioPassthroughToggleCodecs: Map<String, (AudioPassthroughPreferences) -> Boolean> =
     mapOf(
         Codec.Audio.AC3 to { it.ac3 },
         Codec.Audio.EAC3 to { it.eac3 },
         Codec.Audio.DTS to { it.dts },
-        Codec.Audio.DCA to { it.dtsHd },
+        Codec.Audio.DCA to { it.dts },
         Codec.Audio.TRUEHD to { it.truehd },
         Codec.Audio.MLP to { it.mlp },
     )

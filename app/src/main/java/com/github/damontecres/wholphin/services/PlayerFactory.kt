@@ -30,7 +30,6 @@ import com.github.damontecres.wholphin.preferences.AppPreferences
 import com.github.damontecres.wholphin.preferences.AssPlaybackMode
 import com.github.damontecres.wholphin.preferences.MediaExtensionStatus
 import com.github.damontecres.wholphin.preferences.PlayerBackend
-import com.github.damontecres.wholphin.preferences.PlayerBufferSize
 import com.github.damontecres.wholphin.preferences.get
 import com.github.damontecres.wholphin.services.hilt.AuthOkHttpClient
 import com.github.damontecres.wholphin.util.BitstreamFilteringCodecAdapterFactory
@@ -149,16 +148,14 @@ class PlayerFactory
                                 disableAudioOffload = disableAudioOffload,
                             )
 
-                        val bufferSize =
-                            prefs.playerBufferSize.takeUnless { it == PlayerBufferSize.UNRECOGNIZED }
-                                ?: PlayerBufferSize.BUFFER_LARGE
                         ExoPlayer
                             .Builder(context)
                             .setMediaSourceFactory(mediaSourceFactory)
                             .setRenderersFactory(renderersFactory)
                             .setTrackSelector(trackSelector)
-                            .setLoadControl(PlayerBufferConfig.createLoadControl(bufferSize))
-                            .build()
+                            .setLoadControl(
+                                PlayerBufferConfig.createLoadControl(prefs.playerBufferTargetMib),
+                            ).build()
                             .apply {
                                 assHandler?.init(this)
                                 withContext(WholphinDispatchers.Main) {

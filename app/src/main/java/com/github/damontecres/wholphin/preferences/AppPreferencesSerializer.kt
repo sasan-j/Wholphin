@@ -58,7 +58,8 @@ class AppPreferencesSerializer
                                 resolutionSwitching = AppPreference.ResolutionSwitching.defaultValue
                                 cinemaMode = AppPreference.CinemaMode.defaultValue
                                 dpadSeekMode = AppPreference.DpadSeekModePref.defaultValue
-                                playerBufferSize = AppPreference.PlayerBufferSizePref.defaultValue
+                                playerBufferTargetMib =
+                                    AppPreference.PlayerBufferSizePref.defaultValue.toInt()
 
                                 overrides =
                                     PlaybackOverrides

@@ -20,6 +20,7 @@ import com.github.damontecres.wholphin.preferences.AppPreference
 import com.github.damontecres.wholphin.preferences.AppPreferences
 import com.github.damontecres.wholphin.preferences.ExperimentalPreference
 import com.github.damontecres.wholphin.preferences.HdrOverrideMode
+import com.github.damontecres.wholphin.preferences.PlayerBufferSize
 import com.github.damontecres.wholphin.preferences.ScreensaverPreference
 import com.github.damontecres.wholphin.preferences.update
 import com.github.damontecres.wholphin.preferences.updateAdvancedPreferences
@@ -499,7 +500,8 @@ class AppUpgradeHandler
                     val ac3WasEnabled = prefs.playbackPreferences.overrides.ac3Supported
                     prefs
                         .updatePlaybackPreferences {
-                            playerBufferSize = AppPreference.PlayerBufferSizePref.defaultValue
+                            playerBufferTargetMib =
+                                AppPreference.PlayerBufferSizePref.defaultValue.toInt()
                         }.updatePlaybackOverrides {
                             audioPassthrough =
                                 if (ac3WasEnabled) {
@@ -512,6 +514,28 @@ class AppUpgradeHandler
                                         .build()
                                 }
                         }
+                }
+            }
+
+            if (previous.isLessThan(Version.fromString("1.0.11-1-g0"))) {
+                // Buffer setting changed from enum presets to a MiB slider.
+                appPreferences.updateData { prefs ->
+                    val legacy = prefs.playbackPreferences.playerBufferSize
+                    val alreadySet = prefs.playbackPreferences.playerBufferTargetMib != 0
+                    if (alreadySet) {
+                        prefs
+                    } else {
+                        val mib =
+                            when (legacy) {
+                                PlayerBufferSize.BUFFER_EXTRA_LARGE -> 160
+                                PlayerBufferSize.BUFFER_LARGE ->
+                                    AppPreference.PlayerBufferSizePref.defaultValue.toInt()
+                                PlayerBufferSize.BUFFER_AUTO,
+                                PlayerBufferSize.UNRECOGNIZED,
+                                -> AppPreference.PlayerBufferSizePref.defaultValue.toInt()
+                            }
+                        prefs.updatePlaybackPreferences { playerBufferTargetMib = mib }
+                    }
                 }
             }
 

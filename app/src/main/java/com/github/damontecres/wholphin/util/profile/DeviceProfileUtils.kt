@@ -97,7 +97,51 @@ fun createDeviceProfile(
     maxStreamingBitrate = maxBitrate
 
     // / Transcoding profiles
-    // Video
+    // Prefer AC3 ahead of AAC so AVR/ARC setups bitstream-decode the fallback
+    // instead of forcing PCM when DirectPlay is not viable.
+    val tsAudioCodecs =
+        if (preferAc3ForSurround && Codec.Audio.AC3 in allowedAudioCodecs) {
+            arrayOf(Codec.Audio.AC3)
+        } else {
+            hlsMpegTsAudioCodecs.filterAllowed(allowedAudioCodecs).let { filtered ->
+                if (filtered.isNotEmpty()) filtered else allowedAudioCodecs
+            }
+        }
+    val fmp4AudioCodecs =
+        if (preferAc3ForSurround && Codec.Audio.AC3 in allowedAudioCodecs) {
+            arrayOf(Codec.Audio.AC3)
+        } else {
+            hlsFmp4AudioCodecs.filterAllowed(allowedAudioCodecs).let { filtered ->
+                if (filtered.isNotEmpty()) filtered else allowedAudioCodecs
+            }
+        }
+
+    // fMP4 HLS first — when only audio must be converted (e.g. TrueHD over ARC), HDR/DV
+    // video can stay remuxed/copied. MPEG-TS remux of HDR often fails and forces a full
+    // video encode that then errors with "video range type not supported".
+    transcodingProfile {
+        type = DlnaProfileType.VIDEO
+        context = EncodingContext.STREAMING
+
+        container = Codec.Container.MP4
+        protocol = MediaStreamProtocol.HLS
+
+        if (supportsHevc) videoCodec(Codec.Video.HEVC)
+        videoCodec(Codec.Video.H264)
+
+        audioCodec(*fmp4AudioCodecs)
+
+        copyTimestamps = false
+        enableSubtitlesInManifest = true
+
+        if (maxResolution > 0) {
+            conditions {
+                ProfileConditionValue.HEIGHT lowerThanOrEquals maxResolution
+            }
+        }
+    }
+
+    // MPEG-TS HLS fallback for broader device compatibility.
     transcodingProfile {
         type = DlnaProfileType.VIDEO
         context = EncodingContext.STREAMING
@@ -108,18 +152,7 @@ fun createDeviceProfile(
         if (supportsHevc) videoCodec(Codec.Video.HEVC)
         videoCodec(Codec.Video.H264)
 
-        // Prefer AC3 ahead of AAC so AVR/ARC setups bitstream-decode the fallback
-        // instead of forcing PCM when DirectPlay is not viable.
-        if (preferAc3ForSurround) {
-            audioCodec(Codec.Audio.AC3)
-        } else {
-            val tsCodecs = hlsMpegTsAudioCodecs.filterAllowed(allowedAudioCodecs)
-            if (tsCodecs.isNotEmpty()) {
-                audioCodec(*tsCodecs)
-            } else {
-                audioCodec(*allowedAudioCodecs)
-            }
-        }
+        audioCodec(*tsAudioCodecs)
 
         copyTimestamps = false
         enableSubtitlesInManifest = true

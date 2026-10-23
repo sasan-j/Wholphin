@@ -18,8 +18,8 @@ class AudioPassthroughUtilsTest {
         assertTrue(Codec.Audio.AC3 in allowed)
         assertTrue(Codec.Audio.EAC3 in allowed)
         assertTrue(Codec.Audio.DTS in allowed)
+        assertTrue(Codec.Audio.DCA in allowed)
         assertTrue(Codec.Audio.AAC in allowed)
-        assertFalse(Codec.Audio.DCA in allowed)
         assertFalse(Codec.Audio.TRUEHD in allowed)
         assertFalse(Codec.Audio.MLP in allowed)
     }

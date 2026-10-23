@@ -15,6 +15,7 @@ import com.github.damontecres.wholphin.ui.preferences.PreferenceGroup
 import com.github.damontecres.wholphin.ui.preferences.PreferenceScreenOption
 import com.github.damontecres.wholphin.ui.preferences.PreferenceValidation
 import com.github.damontecres.wholphin.util.DebugLogTree
+import com.github.damontecres.wholphin.util.playback.PlayerBufferConfig
 import com.github.damontecres.wholphin.util.profile.effectiveAudioPassthrough
 import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.milliseconds
@@ -463,8 +464,8 @@ sealed interface AppPreference<Pref, T> {
                 setter = { prefs, value ->
                     prefs.updatePlaybackAudioPassthrough { dtsHd = value }
                 },
-                summaryOn = R.string.audio_passthrough_requires_earc,
-                summaryOff = R.string.audio_passthrough_requires_earc,
+                summaryOn = R.string.audio_passthrough_dts_hd_summary,
+                summaryOff = R.string.audio_passthrough_dts_hd_summary,
             )
 
         val PassthroughTrueHd =
@@ -492,24 +493,24 @@ sealed interface AppPreference<Pref, T> {
             )
 
         val PlayerBufferSizePref =
-            AppChoicePreference<AppPreferences, PlayerBufferSize>(
+            AppSliderPreference<AppPreferences>(
                 title = R.string.player_buffer_size,
-                defaultValue = PlayerBufferSize.BUFFER_LARGE,
-                getter = {
-                    it.playbackPreferences.playerBufferSize.takeUnless { size ->
-                        size == PlayerBufferSize.UNRECOGNIZED
-                    } ?: PlayerBufferSize.BUFFER_LARGE
-                },
+                defaultValue = PlayerBufferConfig.DEFAULT_TARGET_MIB.toLong(),
+                min = PlayerBufferConfig.MIN_MIB.toLong(),
+                max = PlayerBufferConfig.MAX_MIB.toLong(),
+                interval = PlayerBufferConfig.SLIDER_STEP_MIB,
+                getter = { it.playbackPreferences.playerBufferTargetMib.toLong() },
                 setter = { prefs, value ->
-                    prefs.updatePlaybackPreferences { playerBufferSize = value }
+                    prefs.updatePlaybackPreferences {
+                        playerBufferTargetMib = value.toInt()
+                    }
                 },
-                displayValues = R.array.player_buffer_size_options,
-                subtitles = R.array.player_buffer_size_summaries,
-                indexToValue = {
-                    PlayerBufferSize.forNumber(it) ?: PlayerBufferSize.BUFFER_LARGE
-                },
-                valueToIndex = {
-                    if (it != PlayerBufferSize.UNRECOGNIZED) it.number else PlayerBufferSize.BUFFER_LARGE.number
+                summarizer = { value ->
+                    when (val mib = value?.toInt()) {
+                        null -> null
+                        PlayerBufferConfig.AUTO_MIB -> "Auto (ExoPlayer default)"
+                        else -> "$mib MiB"
+                    }
                 },
                 summary = R.string.player_buffer_size_summary,
             )
