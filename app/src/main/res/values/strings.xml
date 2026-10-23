@@ -321,18 +321,8 @@
     <string name="pref_key_update_last_check" translatable="false">preference.update.lastTimestamp</string>
 
     <string name="ac3_supported">Device supports AC3/Dolby Digital</string>
-    <string name="audio_passthrough">Audio passthrough formats</string>
-    <string name="audio_passthrough_summary">Advertise these formats to the Jellyfin server for Direct Play. Defaults match HDMI ARC (AC3, E-AC3, DTS). TrueHD and DTS-HD need eARC — leave them off over ARC so the server transcodes instead. Android often over-reports passthrough on ARC.</string>
-    <string name="audio_passthrough_ac3">Dolby Digital (AC3)</string>
-    <string name="audio_passthrough_eac3">Dolby Digital Plus (E-AC3 / DD+ Atmos)</string>
-    <string name="audio_passthrough_dts">DTS</string>
-    <string name="audio_passthrough_dts_hd">DTS-HD / DTS-HD MA</string>
-    <string name="audio_passthrough_truehd">Dolby TrueHD / TrueHD Atmos</string>
-    <string name="audio_passthrough_mlp">MLP</string>
-    <string name="audio_passthrough_requires_earc">Requires eARC (not carried over standard HDMI ARC)</string>
     <string name="player_buffer_size">Player buffer size</string>
     <string name="player_buffer_size_summary">Target ExoPlayer buffer in MiB (0 = Auto). Size is prioritized over time so high-bitrate spikes do not allocate hundreds of MB on ~1 GB TVs. Default 96 MiB ≈ 5s at 150 Mbps.</string>
-    <string name="audio_passthrough_dts_hd_summary">Requires eARC. Jellyfin usually tags DTS-HD as dts/dca, so this does not change Direct Play by itself — leave TrueHD/MLP off for ARC.</string>
     <string name="advanced_settings">Advanced Settings</string>
     <string name="advanced_ui">Advanced UI</string>
     <string name="app_theme">Application Theme</string>

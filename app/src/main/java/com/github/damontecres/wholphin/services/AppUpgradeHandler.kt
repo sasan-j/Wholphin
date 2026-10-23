@@ -20,7 +20,6 @@ import com.github.damontecres.wholphin.preferences.AppPreference
 import com.github.damontecres.wholphin.preferences.AppPreferences
 import com.github.damontecres.wholphin.preferences.ExperimentalPreference
 import com.github.damontecres.wholphin.preferences.HdrOverrideMode
-import com.github.damontecres.wholphin.preferences.PlayerBufferSize
 import com.github.damontecres.wholphin.preferences.ScreensaverPreference
 import com.github.damontecres.wholphin.preferences.update
 import com.github.damontecres.wholphin.preferences.updateAdvancedPreferences
@@ -41,7 +40,6 @@ import com.github.damontecres.wholphin.ui.preferences.subtitle.SubtitleSettings
 import com.github.damontecres.wholphin.ui.preferences.subtitle.shouldEnableSeparateHdrToggle
 import com.github.damontecres.wholphin.ui.setup.seerr.migrateSeerrUrl
 import com.github.damontecres.wholphin.util.Version
-import com.github.damontecres.wholphin.util.profile.defaultAudioPassthroughPreferences
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.firstOrNull
@@ -165,7 +163,7 @@ class AppUpgradeHandler
             if (previous.isEqualOrBefore(Version.fromString("0.1.0-2-g0"))) {
                 appPreferences.updateData {
                     it.updatePlaybackOverrides {
-                        ac3Supported = AppPreference.PassthroughAc3.defaultValue
+                        ac3Supported = AppPreference.Ac3Supported.defaultValue
                         downmixStereo = AppPreference.DownMixStereo.defaultValue
 //                        directPlayAss = AppPreference.DirectPlayAss.defaultValue
                         directPlayPgs = AppPreference.DirectPlayPgs.defaultValue
@@ -494,47 +492,15 @@ class AppUpgradeHandler
             }
 
             if (previous.isLessThan(Version.fromString("1.0.11-0-g0"))) {
-                // Introduce per-codec audio passthrough (ARC defaults) and larger player buffer.
-                // Proto3 bool defaults are false, so existing installs must be migrated explicitly.
+                // Proto3 int32 defaults to 0 (Auto); set the larger recommended buffer for upgrades.
                 appPreferences.updateData { prefs ->
-                    val ac3WasEnabled = prefs.playbackPreferences.overrides.ac3Supported
-                    prefs
-                        .updatePlaybackPreferences {
-                            playerBufferTargetMib =
-                                AppPreference.PlayerBufferSizePref.defaultValue.toInt()
-                        }.updatePlaybackOverrides {
-                            audioPassthrough =
-                                if (ac3WasEnabled) {
-                                    defaultAudioPassthroughPreferences()
-                                } else {
-                                    defaultAudioPassthroughPreferences()
-                                        .toBuilder()
-                                        .setAc3(false)
-                                        .setEac3(false)
-                                        .build()
-                                }
-                        }
-                }
-            }
-
-            if (previous.isLessThan(Version.fromString("1.0.11-1-g0"))) {
-                // Buffer setting changed from enum presets to a MiB slider.
-                appPreferences.updateData { prefs ->
-                    val legacy = prefs.playbackPreferences.playerBufferSize
-                    val alreadySet = prefs.playbackPreferences.playerBufferTargetMib != 0
-                    if (alreadySet) {
+                    if (prefs.playbackPreferences.playerBufferTargetMib != 0) {
                         prefs
                     } else {
-                        val mib =
-                            when (legacy) {
-                                PlayerBufferSize.BUFFER_EXTRA_LARGE -> 160
-                                PlayerBufferSize.BUFFER_LARGE ->
-                                    AppPreference.PlayerBufferSizePref.defaultValue.toInt()
-                                PlayerBufferSize.BUFFER_AUTO,
-                                PlayerBufferSize.UNRECOGNIZED,
-                                -> AppPreference.PlayerBufferSizePref.defaultValue.toInt()
-                            }
-                        prefs.updatePlaybackPreferences { playerBufferTargetMib = mib }
+                        prefs.updatePlaybackPreferences {
+                            playerBufferTargetMib =
+                                AppPreference.PlayerBufferSizePref.defaultValue.toInt()
+                        }
                     }
                 }
             }

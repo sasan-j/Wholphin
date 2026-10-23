@@ -4,8 +4,6 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.datastore.core.CorruptionException
 import androidx.datastore.core.Serializer
 import com.github.damontecres.wholphin.ui.preferences.subtitle.SubtitleSettings
-import com.github.damontecres.wholphin.util.profile.defaultAudioPassthroughPreferences
-import com.github.damontecres.wholphin.util.profile.effectiveAudioPassthrough
 import com.google.protobuf.InvalidProtocolBufferException
 import org.jellyfin.sdk.model.api.BaseItemKind
 import java.io.InputStream
@@ -65,7 +63,7 @@ class AppPreferencesSerializer
                                     PlaybackOverrides
                                         .newBuilder()
                                         .apply {
-                                            ac3Supported = AppPreference.PassthroughAc3.defaultValue
+                                            ac3Supported = AppPreference.Ac3Supported.defaultValue
                                             downmixStereo = AppPreference.DownMixStereo.defaultValue
 //                                            directPlayAss = AppPreference.DirectPlayAss.defaultValue
                                             directPlayPgs = AppPreference.DirectPlayPgs.defaultValue
@@ -73,7 +71,6 @@ class AppPreferencesSerializer
                                                 AppPreference.FfmpegPreference.defaultValue
                                             assPlaybackMode =
                                                 AppPreference.AssSubtitleMode.defaultValue
-                                            audioPassthrough = defaultAudioPassthroughPreferences()
                                         }.build()
 
                                 mpvOptions =
@@ -219,22 +216,6 @@ inline fun AppPreferences.updatePlaybackOverrides(block: PlaybackOverrides.Build
     updatePlaybackPreferences {
         overrides = overrides.toBuilder().apply(block).build()
     }
-
-inline fun AppPreferences.updatePlaybackAudioPassthrough(
-    block: AudioPassthroughPreferences.Builder.() -> Unit,
-): AppPreferences {
-    val seeded = playbackPreferences.overrides.effectiveAudioPassthrough()
-    return updatePlaybackOverrides {
-        // Seed from effective defaults so the first toggle does not wipe ARC defaults
-        // when the nested message was still unconfigured (proto3 all-false).
-        audioPassthrough =
-            seeded
-                .toBuilder()
-                .apply(block)
-                .setConfigured(true)
-                .build()
-    }
-}
 
 inline fun AppPreferences.updateMpvOptions(block: MpvOptions.Builder.() -> Unit): AppPreferences =
     updatePlaybackPreferences {

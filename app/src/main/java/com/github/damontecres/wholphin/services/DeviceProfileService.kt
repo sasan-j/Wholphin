@@ -10,7 +10,6 @@ import com.github.damontecres.wholphin.preferences.enabled
 import com.github.damontecres.wholphin.preferences.getHdrRangeTypesFor
 import com.github.damontecres.wholphin.util.WholphinDispatchers
 import com.github.damontecres.wholphin.util.profile.MediaCodecCapabilitiesTest
-import com.github.damontecres.wholphin.util.profile.allowedAudioCodecs
 import com.github.damontecres.wholphin.util.profile.createDeviceProfile
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.sync.Mutex
@@ -60,7 +59,7 @@ class DeviceProfileService
                             createDeviceProfile(
                                 mediaTest = mediaCodecCapabilitiesTest,
                                 maxBitrate = newConfig.maxBitrate,
-                                allowedAudioCodecs = newConfig.overrides.allowedAudioCodecs(),
+                                isAC3Enabled = newConfig.overrides.ac3Supported,
                                 downMixAudio = newConfig.overrides.downmixStereo,
                                 assDirectPlay = newConfig.overrides.assPlaybackMode != AssPlaybackMode.ASS_TRANSCODE,
                                 pgsDirectPlay = newConfig.overrides.directPlayPgs,

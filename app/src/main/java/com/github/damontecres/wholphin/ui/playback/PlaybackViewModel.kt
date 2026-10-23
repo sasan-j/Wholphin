@@ -73,9 +73,8 @@ import com.github.damontecres.wholphin.util.PlaybackItemState
 import com.github.damontecres.wholphin.util.TrackActivityPlaybackListener
 import com.github.damontecres.wholphin.util.WholphinDispatchers
 import com.github.damontecres.wholphin.util.checkForSupport
-import com.github.damontecres.wholphin.util.mpv.createMpvDeviceProfile
+import com.github.damontecres.wholphin.util.mpv.mpvDeviceProfile
 import com.github.damontecres.wholphin.util.profile.Codec
-import com.github.damontecres.wholphin.util.profile.allowedAudioCodecs
 import com.github.damontecres.wholphin.util.subtitleMimeTypes
 import com.github.damontecres.wholphin.util.supportItemKinds
 import dagger.assisted.Assisted
@@ -677,10 +676,7 @@ class PlaybackViewModel
                                             serverRepository.currentServer?.serverVersion,
                                         )
                                     } else {
-                                        createMpvDeviceProfile(
-                                            preferences.appPreferences.playbackPreferences.overrides
-                                                .allowedAudioCodecs(),
-                                        )
+                                        mpvDeviceProfile
                                     },
                                 maxAudioChannels = null,
                                 audioStreamIndex = audioIndex,

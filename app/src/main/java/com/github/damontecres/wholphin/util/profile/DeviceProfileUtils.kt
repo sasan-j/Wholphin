@@ -15,6 +15,13 @@ import org.jellyfin.sdk.model.api.SubtitleDeliveryMethod
 import org.jellyfin.sdk.model.deviceprofile.DeviceProfileBuilder
 import org.jellyfin.sdk.model.deviceprofile.buildDeviceProfile
 
+private val downmixSupportedAudioCodecs =
+    arrayOf(
+        Codec.Audio.AAC,
+        Codec.Audio.MP2,
+        Codec.Audio.MP3,
+    )
+
 val supportedAudioCodecs =
     arrayOf(
         Codec.Audio.AAC,
@@ -38,12 +45,28 @@ val supportedAudioCodecs =
         Codec.Audio.VORBIS,
     )
 
+// fun createDeviceProfile(
+//    context: Context,
+//    userPreferences: UserPreferences,
+//    serverVersion: ServerVersion?,
+// ) = userPreferences.appPreferences.playbackPreferences.let { prefs ->
+//    createDeviceProfile(
+//        mediaTest = MediaCodecCapabilitiesTest(context),
+//        maxBitrate = prefs.maxBitrate.toInt(),
+//        isAC3Enabled = prefs.overrides.ac3Supported,
+//        downMixAudio = prefs.overrides.downmixStereo,
+//        assDirectPlay = prefs.overrides.directPlayAss,
+//        pgsDirectPlay = prefs.overrides.directPlayPgs,
+//        jellyfinTenEleven = serverVersion != null && serverVersion >= ServerVersion(10, 11, 0),
+//    )
+// }
+
 private fun Size.min(min: Int) = if (min > 0 && height > min) Size(width, min) else this
 
 fun createDeviceProfile(
     mediaTest: MediaCodecCapabilitiesTest,
     maxBitrate: Int,
-    allowedAudioCodecs: Array<String>,
+    isAC3Enabled: Boolean,
     downMixAudio: Boolean,
     assDirectPlay: Boolean,
     pgsDirectPlay: Boolean,
@@ -54,6 +77,22 @@ fun createDeviceProfile(
     forceDisabledHdr: Set<String>,
     maxResolution: Int,
 ) = buildDeviceProfile {
+    val allowedAudioCodecs =
+        when {
+            downMixAudio -> {
+                downmixSupportedAudioCodecs
+            }
+
+            !isAC3Enabled -> {
+                supportedAudioCodecs
+                    .filterNot { it == Codec.Audio.EAC3 || it == Codec.Audio.AC3 }
+                    .toTypedArray()
+            }
+
+            else -> {
+                supportedAudioCodecs
+            }
+        }
 
     val supportsHevc = mediaTest.supportsHevc()
     val supportsHevcMain10 = mediaTest.supportsHevcMain10()
@@ -97,51 +136,7 @@ fun createDeviceProfile(
     maxStreamingBitrate = maxBitrate
 
     // / Transcoding profiles
-    // Prefer AC3 ahead of AAC so AVR/ARC setups bitstream-decode the fallback
-    // instead of forcing PCM when DirectPlay is not viable.
-    val tsAudioCodecs =
-        if (preferAc3ForSurround && Codec.Audio.AC3 in allowedAudioCodecs) {
-            arrayOf(Codec.Audio.AC3)
-        } else {
-            hlsMpegTsAudioCodecs.filterAllowed(allowedAudioCodecs).let { filtered ->
-                if (filtered.isNotEmpty()) filtered else allowedAudioCodecs
-            }
-        }
-    val fmp4AudioCodecs =
-        if (preferAc3ForSurround && Codec.Audio.AC3 in allowedAudioCodecs) {
-            arrayOf(Codec.Audio.AC3)
-        } else {
-            hlsFmp4AudioCodecs.filterAllowed(allowedAudioCodecs).let { filtered ->
-                if (filtered.isNotEmpty()) filtered else allowedAudioCodecs
-            }
-        }
-
-    // fMP4 HLS first — when only audio must be converted (e.g. TrueHD over ARC), HDR/DV
-    // video can stay remuxed/copied. MPEG-TS remux of HDR often fails and forces a full
-    // video encode that then errors with "video range type not supported".
-    transcodingProfile {
-        type = DlnaProfileType.VIDEO
-        context = EncodingContext.STREAMING
-
-        container = Codec.Container.MP4
-        protocol = MediaStreamProtocol.HLS
-
-        if (supportsHevc) videoCodec(Codec.Video.HEVC)
-        videoCodec(Codec.Video.H264)
-
-        audioCodec(*fmp4AudioCodecs)
-
-        copyTimestamps = false
-        enableSubtitlesInManifest = true
-
-        if (maxResolution > 0) {
-            conditions {
-                ProfileConditionValue.HEIGHT lowerThanOrEquals maxResolution
-            }
-        }
-    }
-
-    // MPEG-TS HLS fallback for broader device compatibility.
+    // Video
     transcodingProfile {
         type = DlnaProfileType.VIDEO
         context = EncodingContext.STREAMING
@@ -152,7 +147,11 @@ fun createDeviceProfile(
         if (supportsHevc) videoCodec(Codec.Video.HEVC)
         videoCodec(Codec.Video.H264)
 
-        audioCodec(*tsAudioCodecs)
+        if (preferAc3ForSurround) {
+            audioCodec(Codec.Audio.AC3)
+        } else {
+            audioCodec(*allowedAudioCodecs)
+        }
 
         copyTimestamps = false
         enableSubtitlesInManifest = true
@@ -172,7 +171,7 @@ fun createDeviceProfile(
         container = Codec.Container.TS
         protocol = MediaStreamProtocol.HLS
 
-        if (preferAc3ForSurround && Codec.Audio.AC3 in allowedAudioCodecs) {
+        if (preferAc3ForSurround) {
             audioCodec(Codec.Audio.AC3)
         } else {
             audioCodec(Codec.Audio.AAC)
